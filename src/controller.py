@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+# vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
+
+import os
+import sys
+import argparse
+
+class Controller:
+
+    def __init__(self):
+        self.path_to_reformat = "~/software/reformat/reformat.py"
+        self.path_to_YART = "~/software/YART/YART.py"
+        self.path_to_plink_ped = args.plink_ped if args.plink_ped else ""
+        self.path_to_plink_map = args.plink_map if args.plink_map else ""
+        self.path_to_family_file = args.family
+        self.path_to_vcf = args.vcf if args.vcf else ""
+        self.reformat_output_ped = "./reformat_output/output.ped"
+        self.filtering_output = "DTWP_f.linkage"    
+        self.separate_chromosomes_output = "DTWP_2.LMmap"
+        self.join_singles_output = "DTWP_2_js.LMmap"
+        self.order_markers_output = "DTWP_2_OM.LMmap"
+        self.YART_output = "YART_output.csv"
+
+    ## Create output directory
+    def create_dir(self, dir_name):
+        if not os.path.exists(dir_name):
+            os.system('mkdir ' + dir_name)
+
+    def convert_to_pre_makeped(self, args):
+        # process plink files
+        if args.plink_ped:
+            command = "python " + self.path_to_reformat + " -p " + self.path_to_plink_ped + " -m " + self.path_to_plink_map + " -f " + self.path_to_family_file
+            print ("\n\nPyLep_MAP: " + command + "\n")
+            os.system(command)
+        # process vcf file
+        elif args.vcf:
+            command = "python " + self.path_to_reformat + " -v " + self.path_to_vcf + " -f " + self.path_to_family_file
+            print ("\n\nPyLep_MAP: " + command + "\n")
+            os.system(command)
+        else:
+            print ("there must be either .plink files, or a .vcf file")
+            sys.exit()
+
+    def make_map_file(self, args):
+        # filter data
+        command = "java -cp /data0/opt/Lep-MAP2/bin/ Filtering data=" + self.reformat_output_ped + " dataTolerance=0.001 >" + self.filtering_output
+        print ("\n\nPyLep_MAP: " + command + "\n")   
+        os.system(command)  
+        # separate chromosomes
+        command = "java -cp /data0/opt/Lep-MAP2/bin/ SeparateChromosomes data=" + self.filtering_output + " sizeLimit=10 >" + self.separate_chromosomes_output 
+        print ("\n\nPyLep_MAP: " + command + "\n")   
+        os.system(command) 
+
+    def add_to_map_file(self, args):
+        command = "java -cp /data0/opt/Lep-MAP2/bin/ JoinSingles " + self.separate_chromosomes_output + " data=" + self.filtering_output + " >" + self.join_singles_output
+        print ("\n\nPyLep_MAP: " + command + "\n")   
+        os.system(command)   
+
+    def generate_ordered_map(self, args):
+        command = "java -cp /data0/opt/Lep-MAP2/bin/ OrderMarkers map=" + self.join_singles_output + " data=" + self.filtering_output + " maxDistance=50 initRecombination=0.025 0 numThreads=32 >" + self.order_markers_output  
+        print ("\n\nPyLep_MAP: " + command + "\n")   
+        os.system(command)       
+
+    def make_super_scaffold_csv(self, args):
+        if self.path_to_plink_map == "":
+            print ("there must be a .plink.map file to run Super-scaffold")
+            sys.exit()      
+        command = "python " + self.path_to_YART + " -pl " + self.path_to_plink_map + " -lm " + self.order_markers_output + " > " + self.YART_output
+        print ("\n\nPyLep_MAP: " + command + "\n")   
+        os.system(command)       
+
+    ## Main execution
+    def execute(self, args):
+        # Lep_MAP pipeline
+        self.convert_to_pre_makeped(args)
+        self.make_map_file(args)
+        self.add_to_map_file(args)
+        self.generate_ordered_map(args)
+        if args.rQTL:
+            """nothing"""# TODO
+        if args.super_scaffold:
+            self.make_super_scaffold_csv(args)
