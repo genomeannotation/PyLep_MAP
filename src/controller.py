@@ -20,6 +20,8 @@ class Controller:
         self.join_singles_output = "DTWP_2_js.LMmap"
         self.order_markers_output = "DTWP_2_OM.LMmap"
         self.YART_output = "YART_output.csv"
+        self.bed_file = "bedfile.bed"
+        self.original_scaffold_fasta = args.fasta if args.fasta else ""
 
     ## Create output directory
     def create_dir(self, dir_name):
@@ -67,7 +69,20 @@ class Controller:
             sys.exit()      
         command = "python " + self.path_to_YART + " -pl " + self.path_to_plink_map + " -lm " + self.order_markers_output + " > " + self.YART_output
         print ("\n\nPyLep_MAP: " + command + "\n")   
-        os.system(command)       
+        os.system(command)
+
+    def make_weights_and_bed_files(self, args):
+        command = "python -m jcvi.assembly.allmaps merge " + self.YART_output + " -o " + self.bed_file 
+        print ("\n\nPyLep_MAP: " + command + "\n")   
+        os.system(command)
+
+    def generate_super_scaffold(self, args):
+        if self.path_to_plink_map == "":
+            print ("there must be a .fa file to run Super-scaffold")
+            sys.exit()   
+        command = "python -m jcvi.assembly.allmaps path " + self.bed_file + " " + self.original_scaffold_fasta
+        print ("\n\nPyLep_MAP: " + command + "\n")   
+        os.system(command)
 
     ## Main execution
     def execute(self, args):
@@ -80,3 +95,5 @@ class Controller:
             """nothing"""# TODO
         if args.super_scaffold:
             self.make_super_scaffold_csv(args)
+            self.make_weights_and_bed_files(args)
+            self.generate_super_scaffold(args)

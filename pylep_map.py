@@ -18,6 +18,7 @@ def main():
     parser.add_argument('-p', '--plink_ped', help='path to .plink.ped file')
     parser.add_argument('-m', '--plink_map', help='path to .plink.map file')
     parser.add_argument('-v', '--vcf', help='path to .vcf file')
+    parser.add_argument('-fa', '--fasta', help='path to .fa file')
     parser.add_argument('-f', '--family', help='path to families.txt file', required=True)
     parser.add_argument('-r', '--rQTL', help='set this flag to run rQTL analysis', action='store_true')
     parser.add_argument('-ss', '--super_scaffold', help='set this flag to run Super-scaffold assembly analysis', action='store_true')
